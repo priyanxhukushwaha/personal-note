@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f6f5f1">
+    <meta name="description" content="A quiet, private notebook that works offline.">
+    <title>Fieldnotes — your private notebook</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Notebook navigation">
+        <a class="brand" href="#" aria-label="Fieldnotes home">
+          <span class="brand-mark">f</span>
+          <span>fieldnotes</span>
+        </a>
+
+        <div class="sidebar-actions">
+          <button class="button button-primary new-note-button" id="new-note" type="button">
+            <span aria-hidden="true">＋</span> New note
+            <kbd>Ctrl N</kbd>
+          </button>
+          <label class="search-box">
+            <span aria-hidden="true">⌕</span>
+            <input id="search" type="search" placeholder="Search notes" autocomplete="off">
+            <kbd>Ctrl K</kbd>
+          </label>
+        </div>
+
+        <nav class="nav-groups">
+          <button class="nav-item active" data-view="notes" type="button">
+            <span class="nav-icon" aria-hidden="true">▤</span> All notes
+            <span class="nav-count" id="notes-count">0</span>
+          </button>
+          <button class="nav-item" data-view="pinned" type="button">
+            <span class="nav-icon" aria-hidden="true">⌖</span> Pinned
+          </button>
+          <button class="nav-item" data-view="liked" type="button">
+            <span class="nav-icon" aria-hidden="true">♥</span> Liked
+          </button>
+          <button class="nav-item" data-view="recent" type="button">
+            <span class="nav-icon" aria-hidden="true">◷</span> Recently opened
+          </button>
+          <button class="nav-item" data-view="archive" type="button">
+            <span class="nav-icon" aria-hidden="true">▣</span> Archive
+            <span class="nav-count" id="archive-count">0</span>
+          </button>
+          <button class="nav-item" data-view="private" type="button">
+            <span class="nav-icon" aria-hidden="true">▤</span> Private
+            <span class="nav-count" id="private-count">0</span>
+          </button>
+
+          <div class="nav-section">
+            <div class="section-heading">FOLDERS</div>
+            <div id="folder-list" class="folder-list"></div>
+          </div>
+          <div class="nav-section">
+            <div class="section-heading">TAGS</div>
+            <div id="tag-list" class="tag-list"></div>
+          </div>
+        </nav>
+
+        <div class="sidebar-bottom">
+          <button class="nav-item" data-view="trash" type="button">
+            <span class="nav-icon" aria-hidden="true">♲</span> Trash
+          </button>
+          <div class="storage-note"><span class="status-dot"></span> Saved on this device</div>
+        </div>
+      </aside>
+
+      <main class="main-area">
+        <section class="list-pane" aria-label="Notes">
+          <header class="list-header">
+            <div>
+              <p class="eyebrow" id="list-eyebrow">YOUR SPACE</p>
+              <h1 id="list-title">All notes</h1>
+            </div>
+            <button class="icon-button mobile-nav-toggle" id="mobile-nav-toggle" type="button" aria-label="Open notebook menu">☰</button>
+            <button class="icon-button mobile-new" id="mobile-new" type="button" aria-label="New note">＋</button>
+          </header>
+          <div class="filter-label" id="filter-label"></div>
+          <div class="note-list" id="note-list"></div>
+          <div class="list-empty hidden" id="list-empty">
+            <span class="empty-icon">✳</span>
+            <h2 id="empty-title">A little room to think.</h2>
+            <p id="empty-copy">Start with a note. It stays yours, right here on this device.</p>
+            <button class="button button-primary" id="empty-new" type="button">Write your first note</button>
+          </div>
+        </section>
+
+        <section class="editor-pane" aria-label="Note editor">
+          <header class="editor-toolbar">
+            <button class="icon-button back-to-list" id="back-to-list" type="button" aria-label="Back to notes">←</button>
+            <div class="crumbs" id="breadcrumbs"><span>All notes</span></div>
+            <div class="toolbar-actions">
+              <span class="save-state" id="save-state" aria-live="polite">All changes saved</span>
+              <button class="icon-button" id="pin-note" type="button" aria-label="Pin note" title="Pin note">⌖</button>
+              <button class="icon-button" id="like-note" type="button" aria-label="Like note" title="Like note">♡</button>
+              <button class="icon-button" id="history-note" type="button" aria-label="Version history" title="Version history">↶</button>
+              <button class="icon-button" id="graph-open" type="button" aria-label="Open note map" title="Note map">◎</button>
+              <button class="icon-button" id="export-note" type="button" aria-label="Export note" title="Export note">↥</button>
+              <button class="icon-button danger-hover" id="delete-note" type="button" aria-label="Move note to trash" title="Move to trash">⌫</button>
+              <span class="toolbar-divider"></span>
+              <button class="button button-quiet" id="preview-toggle" type="button">Preview</button>
+              <button class="icon-button menu-button" id="menu-open" type="button" aria-label="More options">···</button>
+            </div>
+          </header>
+
+          <div class="editor-scroll" id="editor-scroll">
+            <div class="note-editor hidden" id="note-editor">
+              <input class="title-input" id="note-title" type="text" placeholder="Untitled note" aria-label="Note title" maxlength="180">
+              <div class="note-meta">
+                <label class="meta-field folder-field">
+                  <span aria-hidden="true">▱</span>
+                  <input id="note-folder" type="text" placeholder="Add to folder" list="folder-options" aria-label="Folder">
+                  <datalist id="folder-options"></datalist>
+                </label>
+                <span class="meta-separator">·</span>
+                <label class="meta-field tag-field">
+                  <span aria-hidden="true">#</span>
+                  <input id="note-tags" type="text" placeholder="Add tags, separated by commas" aria-label="Tags">
+                </label>
+              </div>
+              <div class="duplicate-warning hidden" id="duplicate-warning"></div>
+              <div class="backlinks hidden" id="backlinks"></div>
+              <div class="writing-area">
+                <textarea id="note-content" placeholder="Start writing…&#10;&#10;Use Markdown for formatting. Link notes with [[double brackets]]." aria-label="Note content" spellcheck="true"></textarea>
+                <article class="markdown-preview hidden" id="markdown-preview" aria-label="Note preview"></article>
+              </div>
+              <div class="editor-footer">
+                <span><span id="word-count">0 words</span><span class="footer-divider">·</span><span>Markdown supported</span></span>
+                <button class="text-button" id="export-markdown" type="button">Export as Markdown ↗</button>
+              </div>
+            </div>
+            <div class="welcome-state" id="welcome-state">
+              <div class="welcome-mark">f</div>
+              <p class="eyebrow">A NOTEBOOK THAT'S YOURS</p>
+              <h2>Make room<br>for a thought.</h2>
+              <p class="welcome-copy">A quiet place for everything on your mind.<br>No account, no cloud, no fuss.</p>
+              <button class="button button-primary" id="welcome-new" type="button">Write a note <span>→</span></button>
+              <div class="welcome-shortcut">Your notes stay on this device, even offline.</div>
+            </div>
+          </div>
+          <div class="status-message hidden" id="status-message" role="status"></div>
+        </section>
+      </main>
+    </div>
+
+    <div class="popover hidden" id="more-menu" role="menu">
+      <button type="button" role="menuitem" id="rename-note" class="hidden">Rename note</button>
+      <button type="button" role="menuitem" id="archive-note" class="hidden">Move to archive</button>
+      <button type="button" role="menuitem" id="private-note" class="hidden">Move to private</button>
+      <button type="button" role="menuitem" id="permanent-delete" class="hidden">Delete permanently…</button>
+      <button type="button" role="menuitem" id="lock-private" class="hidden">Lock Private notes</button>
+      <button type="button" role="menuitem" id="import-button">Import notes…</button>
+      <button type="button" role="menuitem" id="export-all">Export all notes…</button>
+      <button type="button" role="menuitem" id="install-button" class="hidden">Install Fieldnotes</button>
+      <button type="button" role="menuitem" id="command-open">Keyboard shortcuts <kbd>⌘ ⇧ P</kbd></button>
+    </div>
+    <input id="import-file" class="hidden" type="file" accept=".json,.md,.markdown,application/json,text/markdown">
+
+    <div class="modal-backdrop hidden" id="modal-backdrop">
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <header class="modal-header">
+          <div><p class="eyebrow" id="modal-eyebrow">FIELDNOTES</p><h2 id="modal-title"></h2></div>
+          <button class="icon-button" id="modal-close" type="button" aria-label="Close">×</button>
+        </header>
+        <div class="modal-content" id="modal-content"></div>
+      </section>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
