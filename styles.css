@@ -178,6 +178,144 @@ kbd { color: #fff; font: 10px var(--mono); white-space: nowrap; }
 .shortcut-list kbd { padding: 4px 6px; border: 1px solid #ffffff24; border-radius: 4px; background: #000; }
 .import-choice { display: flex; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid #ffffff24; color: #fff; font-size: 12px; }
 .import-choice span { color: #ffffffa6; font-size: 11px; }
+.theme-toggle { margin-left: 3px; }
+.theme-toggle svg { width: 18px; height: 18px; fill: currentColor; }
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --paper: #f5f7f8;
+  --surface: #fff;
+  --ink: #1d2933;
+  --muted: #687681;
+  --line: #dce3e8;
+  --accent: #087f8c;
+  --accent-soft: #e2f3f5;
+}
+
+[data-theme="light"] body { background: var(--paper); color: var(--ink); }
+[data-theme="light"] .button-primary { color: #fff; }
+[data-theme="light"] .sidebar,
+[data-theme="light"] .list-pane { background: #f8fafb; }
+[data-theme="light"] .sidebar { border-color: var(--line); }
+[data-theme="light"] .search-box,
+[data-theme="light"] .note-card.selected,
+[data-theme="light"] .duplicate-warning,
+[data-theme="light"] .markdown-preview code,
+[data-theme="light"] .markdown-preview pre,
+[data-theme="light"] .status-message,
+[data-theme="light"] .popover,
+[data-theme="light"] .password-form input,
+[data-theme="light"] .small-button,
+[data-theme="light"] .graph-wrap,
+[data-theme="light"] .shortcut-list kbd { background: #fff; }
+[data-theme="light"] .search-box,
+[data-theme="light"] .sidebar-bottom,
+[data-theme="light"] .editor-toolbar,
+[data-theme="light"] .note-meta,
+[data-theme="light"] .editor-footer,
+[data-theme="light"] .modal,
+[data-theme="light"] .modal-header,
+[data-theme="light"] .password-form input,
+[data-theme="light"] .history-item,
+[data-theme="light"] .small-button,
+[data-theme="light"] .shortcut-list kbd,
+[data-theme="light"] .import-choice { border-color: var(--line); }
+[data-theme="light"] .nav-item,
+[data-theme="light"] .folder-icon,
+[data-theme="light"] .tag-chip,
+[data-theme="light"] .storage-note,
+[data-theme="light"] .note-card-title,
+[data-theme="light"] .icon-button,
+[data-theme="light"] .button-quiet,
+[data-theme="light"] .title-input,
+[data-theme="light"] .backlinks,
+[data-theme="light"] #note-content,
+[data-theme="light"] .markdown-preview,
+[data-theme="light"] .markdown-preview h1,
+[data-theme="light"] .markdown-preview h2,
+[data-theme="light"] .markdown-preview h3,
+[data-theme="light"] .text-button,
+[data-theme="light"] .welcome-state h2,
+[data-theme="light"] .popover button,
+[data-theme="light"] .password-copy,
+[data-theme="light"] .history-copy strong,
+[data-theme="light"] .small-button,
+[data-theme="light"] .shortcut-list,
+[data-theme="light"] .import-choice { color: var(--ink); }
+[data-theme="light"] kbd,
+[data-theme="light"] .search-box,
+[data-theme="light"] .search-box input::placeholder,
+[data-theme="light"] .nav-count,
+[data-theme="light"] .section-heading,
+[data-theme="light"] .eyebrow,
+[data-theme="light"] .filter-label,
+[data-theme="light"] .note-card-preview,
+[data-theme="light"] .note-card-meta,
+[data-theme="light"] .card-tag,
+[data-theme="light"] .list-empty p,
+[data-theme="light"] .crumbs,
+[data-theme="light"] .crumbs span + span::before,
+[data-theme="light"] .save-state,
+[data-theme="light"] .title-input::placeholder,
+[data-theme="light"] .meta-field,
+[data-theme="light"] .meta-separator,
+[data-theme="light"] .backlinks strong,
+[data-theme="light"] #note-content::placeholder,
+[data-theme="light"] .markdown-preview blockquote,
+[data-theme="light"] .editor-footer,
+[data-theme="light"] .footer-divider,
+[data-theme="light"] .welcome-copy,
+[data-theme="light"] .welcome-shortcut,
+[data-theme="light"] .password-form label,
+[data-theme="light"] .history-copy span,
+[data-theme="light"] .modal-empty,
+[data-theme="light"] .import-choice span { color: var(--muted); }
+[data-theme="light"] .nav-item.active,
+[data-theme="light"] .nav-item.active .nav-icon,
+[data-theme="light"] .nav-icon,
+[data-theme="light"] .tag-chip.active,
+[data-theme="light"] .tag-chip:hover,
+[data-theme="light"] .card-pin,
+[data-theme="light"] .icon-button.is-pinned,
+[data-theme="light"] .icon-button.is-liked,
+[data-theme="light"] .card-like,
+[data-theme="light"] .text-button:hover,
+[data-theme="light"] .duplicate-warning,
+[data-theme="light"] .duplicate-warning button,
+[data-theme="light"] .backlinks button,
+[data-theme="light"] .markdown-preview a,
+[data-theme="light"] .markdown-preview .wiki-link,
+[data-theme="light"] .status-message.error,
+[data-theme="light"] .password-error,
+[data-theme="light"] .small-button { color: var(--accent); }
+[data-theme="light"] .nav-item.active,
+[data-theme="light"] .tag-chip.active,
+[data-theme="light"] .tag-chip:hover { background: var(--accent-soft); }
+[data-theme="light"] .nav-item:hover,
+[data-theme="light"] .note-card:hover,
+[data-theme="light"] .icon-button:hover,
+[data-theme="light"] .button-quiet:hover,
+[data-theme="light"] .popover button:hover,
+[data-theme="light"] .small-button:hover { background: #edf1f3; }
+[data-theme="light"] .nav-item.active { color: var(--accent); }
+[data-theme="light"] .nav-item.active .nav-icon,
+[data-theme="light"] .nav-icon,
+[data-theme="light"] .empty-icon,
+[data-theme="light"] .status-dot,
+[data-theme="light"] .graph-edge,
+[data-theme="light"] .graph-label { color: var(--accent); }
+[data-theme="light"] .graph-edge { stroke: var(--accent); }
+[data-theme="light"] .graph-node { fill: var(--accent); stroke: var(--ink); }
+[data-theme="light"] .graph-label { fill: var(--accent); }
+[data-theme="light"] .main-area { background: var(--surface); }
+[data-theme="light"] .sidebar-bottom { border-top-color: var(--line); }
+[data-theme="light"] .editor-toolbar { border-bottom-color: var(--line); }
+[data-theme="light"] .note-meta,
+[data-theme="light"] .editor-footer { border-color: var(--line); }
+[data-theme="light"] .status-message { border-color: var(--line); }
+[data-theme="light"] .status-message.error,
+[data-theme="light"] .duplicate-warning { border-color: var(--accent); }
+[data-theme="light"] .password-form input:focus { border-color: var(--accent); }
 
 @media (max-width: 1100px) {
   .save-state { display: none; }
