@@ -1,6 +1,6 @@
 {
-  "name": "Fieldnotes — your private notebook",
-  "short_name": "Fieldnotes",
+  "name": "OFFNOTE — your private notebook",
+  "short_name": "OFFNOTE",
   "description": "A quiet, private notebook that works offline.",
   "start_url": "./",
   "display": "standalone",

@@ -1171,7 +1171,7 @@
     installPrompt = event;
     $('#install-button').classList.remove('hidden');
   });
-  window.addEventListener('appinstalled', () => showStatus('Fieldnotes is ready on your device.'));
+  window.addEventListener('appinstalled', () => showStatus('OFFNOTE is ready on your device.'));
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && privateKey) lockPrivate();
   });
