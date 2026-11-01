@@ -10,7 +10,6 @@
   const THEME_STORAGE_KEY = 'fieldnotes-theme';
   const $ = (selector) => document.querySelector(selector);
   const appShell = $('.app-shell');
-  const themeToggle = $('#theme-toggle');
   const ui = {
     noteList: $('#note-list'),
     search: $('#search'),
@@ -59,8 +58,10 @@
   function applyTheme(theme) {
     const isDark = theme === 'dark';
     document.documentElement.dataset.theme = theme;
-    themeToggle.setAttribute('aria-label', `Switch to ${isDark ? 'light' : 'dark'} mode`);
-    themeToggle.title = `Switch to ${isDark ? 'light' : 'dark'} mode`;
+    document.querySelectorAll('.theme-toggle').forEach((button) => {
+      button.setAttribute('aria-label', `Switch to ${isDark ? 'light' : 'dark'} mode`);
+      button.title = `Switch to ${isDark ? 'light' : 'dark'} mode`;
+    });
     $('meta[name="theme-color"]').content = isDark ? '#000000' : '#f5f7f8';
   }
 
@@ -1048,7 +1049,7 @@
   document.addEventListener('click', async (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
-    if (target.closest('#theme-toggle')) {
+    if (target.closest('.theme-toggle')) {
       const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
       localStorage.setItem(THEME_STORAGE_KEY, theme);
       applyTheme(theme);

@@ -180,6 +180,7 @@ kbd { color: #fff; font: 10px var(--mono); white-space: nowrap; }
 .import-choice span { color: #ffffffa6; font-size: 11px; }
 .theme-toggle { margin-left: 3px; }
 .theme-toggle svg { width: 18px; height: 18px; fill: currentColor; }
+.mobile-theme-toggle { display: none !important; }
 
 :root[data-theme="light"] {
   color-scheme: light;
@@ -377,6 +378,7 @@ kbd { color: #fff; font: 10px var(--mono); white-space: nowrap; }
   .back-to-list { display: inline-grid !important; }
   .list-header { justify-content: flex-start; gap: 7px; }
   .list-header > div { margin-right: auto; }
+  .mobile-theme-toggle { display: inline-grid !important; }
   .editor-toolbar { padding: 0 12px; }
   .crumbs { max-width: 80px; }
   .toolbar-actions { gap: 0; }
