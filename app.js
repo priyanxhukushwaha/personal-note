@@ -1188,6 +1188,7 @@
         navigator.serviceWorker.register('./sw.js').catch((error) => showStatus(`Offline support could not start: ${error.message}`, true));
       }
     } catch (error) {
+      
       showStatus(`Could not open your notebook: ${error.message}`, true);
       ui.saveState.textContent = 'Storage unavailable';
     }
