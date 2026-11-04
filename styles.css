@@ -180,6 +180,7 @@ kbd { color: #fff; font: 10px var(--mono); white-space: nowrap; }
 .import-choice span { color: #ffffffa6; font-size: 11px; }
 .theme-toggle { margin-left: 3px; }
 .theme-toggle svg { width: 18px; height: 18px; fill: currentColor; }
+.settings-button svg { width: 17px; height: 17px; fill: currentColor; }
 .mobile-theme-toggle { display: none !important; }
 
 :root[data-theme="light"] {
@@ -317,6 +318,38 @@ kbd { color: #fff; font: 10px var(--mono); white-space: nowrap; }
 [data-theme="light"] .status-message.error,
 [data-theme="light"] .duplicate-warning { border-color: var(--accent); }
 [data-theme="light"] .password-form input:focus { border-color: var(--accent); }
+
+.settings-form { display: grid; gap: 9px; }
+.settings-copy { margin: 0 0 5px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.settings-form > label { margin-top: 4px; color: var(--muted); font-size: 11px; }
+.settings-form > input[type="color"] { width: 100%; height: 38px; padding: 4px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); cursor: pointer; }
+.settings-form select { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); }
+.settings-actions { display: flex; align-items: center; gap: 9px; margin-top: 4px; }
+.settings-actions .password-submit { margin-top: 0; }
+.settings-password { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 13px; padding-top: 14px; border-top: 1px solid var(--line); }
+.settings-password div { display: grid; gap: 5px; }
+.settings-password strong { color: var(--ink); font-size: 12px; }
+.settings-password span { color: var(--muted); font-size: 10px; line-height: 1.5; }
+
+:root[data-user-customized="true"] body,
+:root[data-user-customized="true"] .sidebar,
+:root[data-user-customized="true"] .list-pane,
+:root[data-user-customized="true"] .editor-pane,
+:root[data-user-customized="true"] .modal,
+:root[data-user-customized="true"] .search-box,
+:root[data-user-customized="true"] .note-card.selected,
+:root[data-user-customized="true"] .duplicate-warning,
+:root[data-user-customized="true"] .markdown-preview code,
+:root[data-user-customized="true"] .markdown-preview pre,
+:root[data-user-customized="true"] .status-message,
+:root[data-user-customized="true"] .password-form input,
+:root[data-user-customized="true"] .graph-wrap,
+:root[data-user-customized="true"] .shortcut-list kbd,
+:root[data-user-customized="true"] .small-button,
+:root[data-user-customized="true"] .popover { background-color: var(--user-background) !important; }
+:root[data-user-customized="true"] body,
+:root[data-user-customized="true"] body * { color: var(--user-font-color) !important; font-family: var(--user-font-family) !important; }
+:root[data-user-customized="true"] .button-primary { color: #000 !important; }
 
 @media (max-width: 1100px) {
   .save-state { display: none; }

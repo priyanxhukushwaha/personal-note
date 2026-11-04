@@ -8,6 +8,13 @@
   const PRIVATE_CHECK = 'fieldnotes-private-notes-v1';
   const PBKDF2_ITERATIONS = 310000;
   const THEME_STORAGE_KEY = 'fieldnotes-theme';
+  const APPEARANCE_CONFIG_KEY = 'appearance';
+  const FONT_FAMILIES = {
+    sans: 'Arial, sans-serif',
+    system: 'system-ui, sans-serif',
+    serif: "Georgia, 'Times New Roman', serif",
+    mono: "Consolas, 'Courier New', monospace",
+  };
   const $ = (selector) => document.querySelector(selector);
   const appShell = $('.app-shell');
   const ui = {
@@ -46,6 +53,7 @@
   let notes = [];
   let privateConfig = null;
   let privateKey = null;
+  let appearance = null;
   let selectedId = null;
   let currentView = 'notes';
   let currentFilter = '';
@@ -63,6 +71,34 @@
       button.title = `Switch to ${isDark ? 'light' : 'dark'} mode`;
     });
     $('meta[name="theme-color"]').content = isDark ? '#000000' : '#f5f7f8';
+  }
+
+  function normalizeAppearance(value) {
+    if (!value || !/^#[\da-f]{6}$/i.test(value.backgroundColor || '')
+      || !/^#[\da-f]{6}$/i.test(value.fontColor || '')
+      || !Object.prototype.hasOwnProperty.call(FONT_FAMILIES, value.fontFamily)) return null;
+    return {
+      backgroundColor: value.backgroundColor,
+      fontColor: value.fontColor,
+      fontFamily: value.fontFamily,
+    };
+  }
+
+  function applyAppearance() {
+    const root = document.documentElement;
+    if (!appearance) {
+      delete root.dataset.userCustomized;
+      root.style.removeProperty('--user-background');
+      root.style.removeProperty('--user-font-color');
+      root.style.removeProperty('--user-font-family');
+      $('meta[name="theme-color"]').content = root.dataset.theme === 'dark' ? '#000000' : '#f5f7f8';
+      return;
+    }
+    root.dataset.userCustomized = 'true';
+    root.style.setProperty('--user-background', appearance.backgroundColor);
+    root.style.setProperty('--user-font-color', appearance.fontColor);
+    root.style.setProperty('--user-font-family', FONT_FAMILIES[appearance.fontFamily]);
+    $('meta[name="theme-color"]').content = appearance.backgroundColor;
   }
 
   applyTheme(localStorage.getItem(THEME_STORAGE_KEY) === 'light' ? 'light' : 'dark');
@@ -107,6 +143,26 @@
 
   function getSetting(key) {
     return requestResult(db.transaction('settings').objectStore('settings').get(key));
+  }
+
+  async function saveSetting(value) {
+    await new Promise((resolve, reject) => {
+      const transaction = db.transaction('settings', 'readwrite');
+      transaction.objectStore('settings').put(value);
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error || new Error('Could not save your settings.'));
+      transaction.onabort = () => reject(transaction.error || new Error('Saving settings was cancelled.'));
+    });
+  }
+
+  async function removeSetting(key) {
+    await new Promise((resolve, reject) => {
+      const transaction = db.transaction('settings', 'readwrite');
+      transaction.objectStore('settings').delete(key);
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error || new Error('Could not reset your settings.'));
+      transaction.onabort = () => reject(transaction.error || new Error('Resetting settings was cancelled.'));
+    });
   }
 
   async function derivePrivateKey(password, salt) {
@@ -184,6 +240,50 @@
     privateKey = key;
     notes = decrypted;
     return true;
+  }
+
+  async function changePrivatePassword(currentPassword, newPassword) {
+    if (!privateConfig) throw new Error('Set a Private password before changing it.');
+    const wasUnlocked = Boolean(privateKey);
+    const oldKey = await derivePrivateKey(currentPassword, base64ToBytes(privateConfig.salt));
+    let check;
+    try {
+      check = await decryptValue(oldKey, { id: PRIVATE_CONFIG_KEY, ...privateConfig.verifier });
+    } catch {
+      throw new Error('That current password is not correct.');
+    }
+    if (check !== PRIVATE_CHECK) throw new Error('That current password is not correct.');
+
+    const decryptedNotes = await Promise.all(notes.map(async (note) => {
+      if (!note.isPrivate || !note.encrypted) return note;
+      const contents = await decryptValue(oldKey, note);
+      if (contents.id !== note.id || !contents.isPrivate) throw new Error('A private note could not be verified.');
+      return contents;
+    }));
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const nextKey = await derivePrivateKey(newPassword, salt);
+    const verifier = await encryptValue(nextKey, PRIVATE_CHECK, PRIVATE_CONFIG_KEY);
+    const config = { key: PRIVATE_CONFIG_KEY, salt: bytesToBase64(salt), verifier };
+    const encryptedRecords = await Promise.all(decryptedNotes
+      .filter((note) => note.isPrivate)
+      .map((note) => encryptNote(note, nextKey)));
+
+    await new Promise((resolve, reject) => {
+      const transaction = db.transaction(['notes', 'settings'], 'readwrite');
+      encryptedRecords.forEach((record) => transaction.objectStore('notes').put(record));
+      transaction.objectStore('settings').put(config);
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error || new Error('Could not update the Private password.'));
+      transaction.onabort = () => reject(transaction.error || new Error('Changing the Private password was cancelled.'));
+    });
+
+    notes = decryptedNotes;
+    privateConfig = config;
+    privateKey = nextKey;
+    if (!wasUnlocked) {
+      privateKey = null;
+      await reloadStoredNotes();
+    }
   }
 
   async function createPrivatePassword(password, noteToPrivatize = null) {
@@ -959,6 +1059,108 @@
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
 
+  async function openSettings() {
+    const defaults = document.documentElement.dataset.theme === 'light'
+      ? { backgroundColor: '#f5f7f8', fontColor: '#1d2933', fontFamily: 'sans' }
+      : { backgroundColor: '#000000', fontColor: '#ffffff', fontFamily: 'sans' };
+    const values = appearance || defaults;
+    const familyOptions = [
+      ['sans', 'Arial'],
+      ['system', 'System default'],
+      ['serif', 'Georgia (serif)'],
+      ['mono', 'Consolas (monospace)'],
+    ].map(([value, label]) => `<option value="${value}" ${values.fontFamily === value ? 'selected' : ''}>${label}</option>`).join('');
+    openModal('Make it yours', `
+      <form id="settings-form" class="settings-form">
+        <p class="settings-copy">Personalize how OFFNOTE looks on this device.</p>
+        <label for="setting-background">Background color</label>
+        <input id="setting-background" name="backgroundColor" type="color" value="${values.backgroundColor}">
+        <label for="setting-font-color">Font color</label>
+        <input id="setting-font-color" name="fontColor" type="color" value="${values.fontColor}">
+        <label for="setting-font-family">Font family</label>
+        <select id="setting-font-family" name="fontFamily">${familyOptions}</select>
+        <p id="settings-error" class="password-error hidden" role="alert"></p>
+        <div class="settings-actions">
+          <button class="button button-primary password-submit" type="submit">Save appearance</button>
+          <button class="small-button" id="reset-appearance" type="button">Reset</button>
+        </div>
+        <div class="settings-password">
+          <div><strong>Private notes</strong><span>${privateConfig ? 'Change the password that protects your encrypted notes.' : 'Set a password to protect notes in Private.'}</span></div>
+          <button class="small-button" id="change-private-password" type="button">${privateConfig ? 'Change password' : 'Set password'}</button>
+        </div>
+      </form>`, 'SETTINGS');
+
+    $('#settings-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const data = new FormData(event.currentTarget);
+      const nextAppearance = normalizeAppearance({
+        backgroundColor: data.get('backgroundColor'),
+        fontColor: data.get('fontColor'),
+        fontFamily: data.get('fontFamily'),
+      });
+      if (!nextAppearance) {
+        const error = $('#settings-error');
+        error.textContent = 'Choose valid colors and a font family.';
+        error.classList.remove('hidden');
+        return;
+      }
+      try {
+        await saveSetting({ key: APPEARANCE_CONFIG_KEY, ...nextAppearance });
+        appearance = nextAppearance;
+        applyAppearance();
+        closeModal();
+        showStatus('Appearance settings saved.');
+      } catch (error) {
+        const message = $('#settings-error');
+        message.textContent = error.message;
+        message.classList.remove('hidden');
+      }
+    });
+  }
+
+  function showChangePrivatePasswordDialog() {
+    if (!privateConfig) {
+      showPrivatePasswordDialog('setup');
+      return;
+    }
+    openModal('Change Private password', `
+      <form id="change-private-password-form" class="password-form">
+        <p class="password-copy">Your private notes will be re-encrypted with the new password. Choose a password you can remember; forgotten passwords cannot be recovered.</p>
+        <label for="current-private-password">Current password</label>
+        <input id="current-private-password" name="current-password" type="password" autocomplete="current-password" required>
+        <label for="new-private-password">New password</label>
+        <input id="new-private-password" name="new-password" type="password" minlength="8" autocomplete="new-password" required>
+        <label for="confirm-private-password">Confirm new password</label>
+        <input id="confirm-private-password" name="confirm-password" type="password" minlength="8" autocomplete="new-password" required>
+        <p id="change-private-password-error" class="password-error hidden" role="alert"></p>
+        <button class="button button-primary password-submit" type="submit">Re-encrypt private notes</button>
+      </form>`, 'PASSWORD PROTECTION');
+
+    const form = $('#change-private-password-form');
+    const currentInput = $('#current-private-password');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const newPassword = $('#new-private-password').value;
+      const error = $('#change-private-password-error');
+      error.classList.add('hidden');
+      try {
+        if (newPassword.length < 8) throw new Error('Use at least 8 characters for the new password.');
+        if (newPassword !== $('#confirm-private-password').value) throw new Error('The new passwords do not match.');
+        if (!window.crypto || !crypto.subtle) throw new Error('Password protection needs a secure browser context (localhost or HTTPS).');
+        await changePrivatePassword(currentInput.value, newPassword);
+        closeModal();
+        render();
+        showStatus('Private password changed. Your private notes were re-encrypted.');
+      } catch (reason) {
+        error.textContent = reason instanceof Error ? reason.message : 'Could not change the Private password.';
+        error.classList.remove('hidden');
+        currentInput.value = '';
+        currentInput.focus();
+      }
+    });
+    currentInput.focus();
+  }
+
   function openHistory() {
     const note = selectedNote();
     if (!note) return;
@@ -1053,6 +1255,7 @@
       const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
       localStorage.setItem(THEME_STORAGE_KEY, theme);
       applyTheme(theme);
+      applyAppearance();
       return;
     }
     const noteButton = target.closest('[data-note-id]');
@@ -1086,6 +1289,26 @@
       else if (['pinned', 'liked', 'recent', 'archive', 'private'].includes(action)) await navigate(action);
       else if (action === 'export') await exportJson('all');
       else if (action === 'shortcuts') openShortcuts();
+      return;
+    }
+    if (target.closest('#settings-open')) {
+      if (!await saveBeforeAction()) return;
+      await openSettings();
+      return;
+    }
+    if (target.closest('#change-private-password')) { showChangePrivatePasswordDialog(); return; }
+    if (target.closest('#reset-appearance')) {
+      try {
+        await removeSetting(APPEARANCE_CONFIG_KEY);
+        appearance = null;
+        applyAppearance();
+        closeModal();
+        showStatus('Appearance settings reset.');
+      } catch (error) {
+        const message = $('#settings-error');
+        message.textContent = error.message;
+        message.classList.remove('hidden');
+      }
       return;
     }
     if (target.closest('#mobile-nav-toggle')) { appShell.classList.toggle('nav-open'); return; }
@@ -1184,6 +1407,8 @@
     try {
       db = await openDatabase();
       await loadNotes();
+      appearance = normalizeAppearance(await getSetting(APPEARANCE_CONFIG_KEY));
+      applyAppearance();
       if ('serviceWorker' in navigator && location.protocol !== 'file:') {
         navigator.serviceWorker.register('./sw.js').catch((error) => showStatus(`Offline support could not start: ${error.message}`, true));
       }

@@ -11,6 +11,8 @@ OFFNOTE is a lightweight, offline-first note-taking app designed to feel quiet a
 - Link notes with double-bracket references like `[[Note title]]`
 - Works offline as a progressive web app (PWA)
 - Keeps data local to the browser on the current device
+- Customize the background, font color, and font family in Settings
+- Change the Private password and re-encrypt protected notes on this device
 
 ## Working
 
