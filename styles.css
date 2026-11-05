@@ -323,7 +323,12 @@ kbd { color: #fff; font: 10px var(--mono); white-space: nowrap; }
 .settings-copy { margin: 0 0 5px; color: var(--muted); font-size: 12px; line-height: 1.6; }
 .settings-form > label { margin-top: 4px; color: var(--muted); font-size: 11px; }
 .settings-form > input[type="color"] { width: 100%; height: 38px; padding: 4px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); cursor: pointer; }
-.settings-form select { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); }
+.settings-form select,
+.settings-form input[type="text"],
+.settings-form input[type="file"] { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); }
+.settings-form input[type="file"] { padding: 7px; font-size: 11px; }
+.font-options { display: grid; gap: 8px; }
+.font-help { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
 .settings-actions { display: flex; align-items: center; gap: 9px; margin-top: 4px; }
 .settings-actions .password-submit { margin-top: 0; }
 .settings-password { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 13px; padding-top: 14px; border-top: 1px solid var(--line); }

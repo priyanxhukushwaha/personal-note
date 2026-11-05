@@ -9,6 +9,8 @@
   const PBKDF2_ITERATIONS = 310000;
   const THEME_STORAGE_KEY = 'fieldnotes-theme';
   const APPEARANCE_CONFIG_KEY = 'appearance';
+  const MAX_FONT_BYTES = 10 * 1024 * 1024;
+  const UPLOADED_FONT_FAMILY = 'OFFNOTE Uploaded Font';
   const FONT_FAMILIES = {
     sans: 'Arial, sans-serif',
     system: 'system-ui, sans-serif',
@@ -62,6 +64,12 @@
   let statusTimer;
   let installPrompt;
   let lastFocus;
+  let uploadedFontFace = null;
+  let googleFontLink = null;
+
+  function isValidGoogleFontName(value) {
+    return typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9 -]{0,79}$/.test(value.trim());
+  }
 
   function applyTheme(theme) {
     const isDark = theme === 'dark';
@@ -76,28 +84,77 @@
   function normalizeAppearance(value) {
     if (!value || !/^#[\da-f]{6}$/i.test(value.backgroundColor || '')
       || !/^#[\da-f]{6}$/i.test(value.fontColor || '')
-      || !Object.prototype.hasOwnProperty.call(FONT_FAMILIES, value.fontFamily)) return null;
+      || !(Object.prototype.hasOwnProperty.call(FONT_FAMILIES, value.fontFamily)
+        || ['google', 'uploaded'].includes(value.fontFamily))) return null;
+    const googleFontName = typeof value.googleFontName === 'string' ? value.googleFontName.trim() : '';
+    const uploadedFontData = value.uploadedFontData instanceof ArrayBuffer ? value.uploadedFontData : null;
+    if ((value.fontFamily === 'google' && !isValidGoogleFontName(googleFontName))
+      || (value.fontFamily === 'uploaded' && (!uploadedFontData || uploadedFontData.byteLength > MAX_FONT_BYTES))) return null;
     return {
       backgroundColor: value.backgroundColor,
       fontColor: value.fontColor,
       fontFamily: value.fontFamily,
+      googleFontName,
+      uploadedFontData,
     };
+  }
+
+  function fontFamilyCss() {
+    if (appearance.fontFamily === 'google') return `"${appearance.googleFontName}", sans-serif`;
+    if (appearance.fontFamily === 'uploaded') return `"${UPLOADED_FONT_FAMILY}", sans-serif`;
+    return FONT_FAMILIES[appearance.fontFamily];
+  }
+
+  function removeGoogleFont() {
+    if (googleFontLink) {
+      googleFontLink.remove();
+      googleFontLink = null;
+    }
+  }
+
+  function applyGoogleFont() {
+    removeGoogleFont();
+    if (appearance?.fontFamily !== 'google') return;
+    googleFontLink = document.createElement('link');
+    googleFontLink.rel = 'stylesheet';
+    googleFontLink.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(appearance.googleFontName).replace(/%20/g, '+')}&display=swap`;
+    document.head.append(googleFontLink);
+  }
+
+  async function prepareUploadedFont(fontData) {
+    const face = new FontFace(UPLOADED_FONT_FAMILY, fontData);
+    return face.load();
+  }
+
+  function registerUploadedFont(face) {
+    if (uploadedFontFace) document.fonts.delete(uploadedFontFace);
+    document.fonts.add(face);
+    uploadedFontFace = face;
   }
 
   function applyAppearance() {
     const root = document.documentElement;
+    applyGoogleFont();
     if (!appearance) {
       delete root.dataset.userCustomized;
       root.style.removeProperty('--user-background');
       root.style.removeProperty('--user-font-color');
       root.style.removeProperty('--user-font-family');
+      if (uploadedFontFace) {
+        document.fonts.delete(uploadedFontFace);
+        uploadedFontFace = null;
+      }
       $('meta[name="theme-color"]').content = root.dataset.theme === 'dark' ? '#000000' : '#f5f7f8';
       return;
     }
     root.dataset.userCustomized = 'true';
     root.style.setProperty('--user-background', appearance.backgroundColor);
     root.style.setProperty('--user-font-color', appearance.fontColor);
-    root.style.setProperty('--user-font-family', FONT_FAMILIES[appearance.fontFamily]);
+    root.style.setProperty('--user-font-family', fontFamilyCss());
+    if (appearance.fontFamily !== 'uploaded' && uploadedFontFace) {
+      document.fonts.delete(uploadedFontFace);
+      uploadedFontFace = null;
+    }
     $('meta[name="theme-color"]').content = appearance.backgroundColor;
   }
 
@@ -1069,6 +1126,8 @@
       ['system', 'System default'],
       ['serif', 'Georgia (serif)'],
       ['mono', 'Consolas (monospace)'],
+      ['google', 'Google Fonts (online)'],
+      ['uploaded', 'Uploaded font (on this device)'],
     ].map(([value, label]) => `<option value="${value}" ${values.fontFamily === value ? 'selected' : ''}>${label}</option>`).join('');
     openModal('Make it yours', `
       <form id="settings-form" class="settings-form">
@@ -1079,6 +1138,14 @@
         <input id="setting-font-color" name="fontColor" type="color" value="${values.fontColor}">
         <label for="setting-font-family">Font family</label>
         <select id="setting-font-family" name="fontFamily">${familyOptions}</select>
+        <div id="google-font-options" class="font-options ${values.fontFamily === 'google' ? '' : 'hidden'}">
+          <label for="setting-google-font">Google Fonts family name</label>
+          <input id="setting-google-font" name="googleFontName" type="text" value="${values.googleFontName || ''}" maxlength="80" placeholder="For example, Open Sans">
+          <p class="font-help">Google Fonts are fetched online from Google and may not be available offline.</p>
+        </div>
+        <label for="setting-font-file">Upload a font file for free</label>
+        <input id="setting-font-file" name="fontFile" type="file" accept=".woff2,.woff,.ttf,.otf,font/woff2,font/woff,font/ttf,font/otf">
+        <p id="uploaded-font-status" class="font-help">${values.uploadedFontData ? 'A font is saved on this device. Choose “Uploaded font” above to use it.' : 'Supported formats: WOFF2, WOFF, TTF, OTF. Maximum size: 10 MB.'}</p>
         <p id="settings-error" class="password-error hidden" role="alert"></p>
         <div class="settings-actions">
           <button class="button button-primary password-submit" type="submit">Save appearance</button>
@@ -1090,13 +1157,68 @@
         </div>
       </form>`, 'SETTINGS');
 
-    $('#settings-form').addEventListener('submit', async (event) => {
+    const form = $('#settings-form');
+    const familySelect = $('#setting-font-family');
+    familySelect.addEventListener('change', () => {
+      $('#google-font-options').classList.toggle('hidden', familySelect.value !== 'google');
+    });
+    $('#setting-font-file').addEventListener('change', (event) => {
+      const file = event.currentTarget.files[0];
+      if (file) $('#uploaded-font-status').textContent = `${file.name} selected. It will be stored only on this device.`;
+    });
+    form.addEventListener('submit', async (event) => {
       event.preventDefault();
-      const data = new FormData(event.currentTarget);
+      const data = new FormData(form);
+      const fontFamily = data.get('fontFamily');
+      const googleFontName = String(data.get('googleFontName') || '').trim();
+      const fontFile = $('#setting-font-file').files[0];
+      let uploadedFontData = appearance?.uploadedFontData || null;
+      let preparedFont = null;
+      if (fontFile) {
+        const extension = fontFile.name.split('.').pop().toLowerCase();
+        if (!['woff2', 'woff', 'ttf', 'otf'].includes(extension)) {
+          $('#settings-error').textContent = 'Choose a WOFF2, WOFF, TTF, or OTF font file.';
+          $('#settings-error').classList.remove('hidden');
+          return;
+        }
+        if (fontFile.size > MAX_FONT_BYTES) {
+          $('#settings-error').textContent = 'Font files must be 10 MB or smaller.';
+          $('#settings-error').classList.remove('hidden');
+          return;
+        }
+        try {
+          uploadedFontData = await fontFile.arrayBuffer();
+        } catch (error) {
+          $('#settings-error').textContent = `Could not read the font file: ${error.message}`;
+          $('#settings-error').classList.remove('hidden');
+          return;
+        }
+      }
+      if (fontFamily === 'google' && !isValidGoogleFontName(googleFontName)) {
+        $('#settings-error').textContent = 'Enter a valid Google Fonts family name.';
+        $('#settings-error').classList.remove('hidden');
+        return;
+      }
+      if (fontFamily === 'uploaded') {
+        if (!uploadedFontData) {
+          $('#settings-error').textContent = 'Upload a font file before selecting the uploaded font.';
+          $('#settings-error').classList.remove('hidden');
+          return;
+        }
+        try {
+          preparedFont = await prepareUploadedFont(uploadedFontData);
+        } catch (error) {
+          $('#settings-error').textContent = `This font file could not be loaded: ${error.message}`;
+          $('#settings-error').classList.remove('hidden');
+          return;
+        }
+      }
       const nextAppearance = normalizeAppearance({
         backgroundColor: data.get('backgroundColor'),
         fontColor: data.get('fontColor'),
-        fontFamily: data.get('fontFamily'),
+        fontFamily,
+        googleFontName,
+        uploadedFontData,
       });
       if (!nextAppearance) {
         const error = $('#settings-error');
@@ -1107,6 +1229,7 @@
       try {
         await saveSetting({ key: APPEARANCE_CONFIG_KEY, ...nextAppearance });
         appearance = nextAppearance;
+        if (preparedFont) registerUploadedFont(preparedFont);
         applyAppearance();
         closeModal();
         showStatus('Appearance settings saved.');
@@ -1408,6 +1531,14 @@
       db = await openDatabase();
       await loadNotes();
       appearance = normalizeAppearance(await getSetting(APPEARANCE_CONFIG_KEY));
+      if (appearance?.fontFamily === 'uploaded') {
+        try {
+          registerUploadedFont(await prepareUploadedFont(appearance.uploadedFontData));
+        } catch (error) {
+          appearance.fontFamily = 'sans';
+          showStatus(`Your uploaded font could not be loaded: ${error.message}`, true);
+        }
+      }
       applyAppearance();
       if ('serviceWorker' in navigator && location.protocol !== 'file:') {
         navigator.serviceWorker.register('./sw.js').catch((error) => showStatus(`Offline support could not start: ${error.message}`, true));

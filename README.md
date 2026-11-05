@@ -12,6 +12,7 @@ OFFNOTE is a lightweight, offline-first note-taking app designed to feel quiet a
 - Works offline as a progressive web app (PWA)
 - Keeps data local to the browser on the current device
 - Customize the background, font color, and font family in Settings
+- Use Google Fonts online or upload a WOFF2, WOFF, TTF, or OTF font (up to 10 MB); uploaded font files stay on this device
 - Change the Private password and re-encrypt protected notes on this device
 
 ## Working
