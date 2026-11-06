@@ -22,8 +22,8 @@ button { color: inherit; }
 
 .sidebar { width: 248px; flex: 0 0 248px; display: flex; flex-direction: column; padding: 27px 15px 17px; background: #000; border-right: 1px solid #ffffff24; }
 .brand { display: flex; align-items: center; gap: 10px; margin: 0 0 29px 8px; color: var(--ink); font-size: 15px; font-weight: 700; letter-spacing: -.5px; text-decoration: none; }
-.brand-mark, .welcome-mark { display: grid; place-items: center; background: var(--accent); color: #000; font: 600 19px var(--serif); }
-.brand-mark { width: 27px; height: 27px; border-radius: 8px 8px 8px 3px; }
+.brand-mark, .welcome-mark { display: block; object-fit: contain; }
+.brand-mark { width: 36px; height: 36px; }
 .sidebar-actions { display: grid; gap: 9px; }
 .button { border: 0; border-radius: 7px; cursor: pointer; transition: background .16s, transform .16s; }
 .button:active { transform: translateY(1px); }
@@ -135,7 +135,7 @@ kbd { color: #fff; font: 10px var(--mono); white-space: nowrap; }
 .text-button { padding: 0; border: 0; background: none; color: #fff; font-size: 10px; cursor: pointer; }
 .text-button:hover { color: var(--accent); }
 .welcome-state { display: flex; align-items: center; flex-direction: column; justify-content: center; min-height: 100%; padding: 45px 20px; text-align: center; }
-.welcome-mark { width: 42px; height: 42px; margin-bottom: 28px; border-radius: 13px 13px 13px 4px; font-size: 27px; }
+.welcome-mark { width: 150px; height: 150px; margin-bottom: 12px; }
 .welcome-state .eyebrow { margin: 0 0 13px; }
 .welcome-state h2 { margin: 0; color: #fff; font: 500 39px/1.2 var(--serif); letter-spacing: -.7px; }
 .welcome-copy { margin: 14px 0 19px; color: #ffffffa6; font-size: 12px; line-height: 1.8; }
