@@ -390,7 +390,7 @@ kbd { color: #fff; font: 10px var(--mono); white-space: nowrap; }
   .title-input { font-size: 29px; }
 }
 @media (max-width: 540px) {
-  .sidebar { position: absolute; z-index: 5; top: 0; bottom: 0; left: 0; display: flex; width: 248px; flex-basis: 248px; align-items: stretch; padding: 20px 15px 12px; transform: translateX(-105%); box-shadow: 8px 0 28px #0008; transition: transform .18s ease; }
+  .sidebar { position: absolute; z-index: 5; top: 0; bottom: 0; left: 0; display: flex; width: 220px; flex-basis: 220px; align-items: stretch; padding: 20px 15px 12px; transform: translateX(-105%); box-shadow: 8px 0 28px #0008; transition: transform .18s ease; }
   .app-shell.nav-open .sidebar { transform: translateX(0); }
   .brand { margin: 0 0 24px 8px; }
   .brand > span:last-child { display: inline; }

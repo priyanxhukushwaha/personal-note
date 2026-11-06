@@ -451,13 +451,16 @@
       const parts = note.folder.split('/');
       return parts.map((part, index) => parts.slice(0, index + 1).join('/'));
     }))].sort((a, b) => a.localeCompare(b));
-    ui.folderList.innerHTML = folders.length ? folders.map((folder) => {
+    ui.folderList.innerHTML = folders.map((folder) => {
       const depth = folder.split('/').filter(Boolean).length - 1;
       return `<button class="nav-item ${currentView === 'folder' && currentFilter === folder ? 'active' : ''}" data-folder="${escapeHtml(folder)}" type="button" style="padding-left:${9 + depth * 10}px" title="${escapeHtml(folder)}"><span class="nav-icon folder-icon">▱</span><span>${escapeHtml(folder.split('/').pop())}</span></button>`;
-    }).join('') : '<span class="section-heading" style="letter-spacing:0;text-transform:none">Folders appear as you add them.</span>';
-    ui.tagList.innerHTML = [...new Set(liveNotes.flatMap((note) => note.tags))]
+    }).join('');
+    ui.folderList.closest('.nav-section').classList.toggle('hidden', !folders.length);
+    const tags = [...new Set(liveNotes.flatMap((note) => note.tags))]
       .sort((a, b) => a.localeCompare(b))
-      .map((tag) => `<button class="tag-chip ${currentView === 'tag' && currentFilter === tag ? 'active' : ''}" data-tag="${escapeHtml(tag)}" type="button"># ${escapeHtml(tag)}</button>`).join('');
+      .map((tag) => `<button class="tag-chip ${currentView === 'tag' && currentFilter === tag ? 'active' : ''}" data-tag="${escapeHtml(tag)}" type="button"># ${escapeHtml(tag)}</button>`);
+    ui.tagList.innerHTML = tags.join('');
+    ui.tagList.closest('.nav-section').classList.toggle('hidden', !tags.length);
     $('#folder-options').innerHTML = folders.map((folder) => `<option value="${escapeHtml(folder)}"></option>`).join('');
   }
 
@@ -1374,6 +1377,9 @@
   document.addEventListener('click', async (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
+    if (appShell.classList.contains('nav-open') && !target.closest('.sidebar, #mobile-nav-toggle')) {
+      appShell.classList.remove('nav-open');
+    }
     if (target.closest('.theme-toggle')) {
       const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
       localStorage.setItem(THEME_STORAGE_KEY, theme);
