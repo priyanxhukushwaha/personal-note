@@ -55,6 +55,7 @@
   let notes = [];
   let privateConfig = null;
   let privateKey = null;
+  let privateUnlockInProgress = false;
   let appearance = null;
   let selectedId = null;
   let currentView = 'notes';
@@ -343,14 +344,13 @@
     }
   }
 
-  async function createPrivatePassword(password, noteToPrivatize = null) {
+  async function createPrivatePassword(password) {
     if (!window.crypto || !crypto.subtle) throw new Error('Password protection needs a secure browser context (localhost or HTTPS).');
     const salt = crypto.getRandomValues(new Uint8Array(16));
     const key = await derivePrivateKey(password, salt);
     const verifier = await encryptValue(key, PRIVATE_CHECK, PRIVATE_CONFIG_KEY);
     const config = { key: PRIVATE_CONFIG_KEY, salt: bytesToBase64(salt), verifier };
-    const updatedNotes = notes.map((note) => note.id === noteToPrivatize ? { ...note, isPrivate: true, archived: false } : note);
-    const encryptedRecords = await Promise.all(updatedNotes.filter((note) => note.isPrivate).map((note) => encryptNote(note, key)));
+    const encryptedRecords = await Promise.all(notes.filter((note) => note.isPrivate).map((note) => encryptNote(note, key)));
     await new Promise((resolve, reject) => {
       const transaction = db.transaction(['notes', 'settings'], 'readwrite');
       const noteStore = transaction.objectStore('notes');
@@ -360,7 +360,6 @@
       transaction.onerror = () => reject(transaction.error || new Error('Could not protect private notes.'));
       transaction.onabort = () => reject(transaction.error || new Error('Password setup was cancelled.'));
     });
-    notes = updatedNotes;
     privateConfig = config;
     privateKey = key;
   }
@@ -439,7 +438,6 @@
     const liveNotes = activeNotes();
     ui.noteCount.textContent = String(liveNotes.length);
     $('#archive-count').textContent = String(notes.filter((note) => !note.deletedAt && note.archived).length);
-    $('#private-count').textContent = String(notes.filter((note) => !note.deletedAt && note.isPrivate).length);
     $('#lock-private').classList.toggle('hidden', !privateKey);
     document.querySelectorAll('.nav-item[data-view]').forEach((item) => {
       const active = item.dataset.view === currentView && !['folder', 'tag'].includes(currentView);
@@ -500,18 +498,7 @@
       const filtered = Boolean(query) || ['folder', 'tag', 'pinned', 'liked', 'recent', 'archive', 'private'].includes(currentView);
       ui.emptyTitle.textContent = isTrash ? 'Nothing in the trash.' : filtered ? 'No notes found.' : 'A little room to think.';
       if (currentView === 'archive') ui.emptyTitle.textContent = 'Nothing archived yet.';
-      if (currentView === 'private' && !privateKey) {
-        ui.emptyTitle.textContent = privateConfig ? 'Private notes are locked.' : 'Set a password for Private.';
-        ui.emptyCopy.textContent = privateConfig
-          ? 'Unlock your notes with your password. They are encrypted on this device.'
-          : 'Set a password to encrypt your private notes. Existing Private notes will be protected too.';
-        $('#empty-new').textContent = privateConfig ? 'Unlock Private' : 'Set a password';
-      } else if (currentView === 'trash' && notes.some((note) => note.deletedAt && note.isPrivate) && !privateKey) {
-        ui.emptyTitle.textContent = 'Private notes are in the trash.';
-        ui.emptyCopy.textContent = 'Unlock Private to view or restore them.';
-        $('#empty-new').textContent = 'Unlock Private';
-        $('#empty-new').classList.remove('hidden');
-      } else if (currentView === 'private') {
+      if (currentView === 'private') {
         ui.emptyTitle.textContent = 'No private notes yet.';
         ui.emptyCopy.textContent = 'Move a note to Private to keep it out of your other lists.';
         $('#empty-new').textContent = 'Create a private note';
@@ -519,9 +506,7 @@
         ui.emptyCopy.textContent = isTrash ? 'Deleted notes will stay here until you restore or remove them.' : filtered ? 'Notes you move here will show up in this list.' : 'Start with a note. It stays yours, right here on this device.';
         $('#empty-new').textContent = 'Write your first note';
       }
-      if (!(currentView === 'trash' && notes.some((note) => note.deletedAt && note.isPrivate) && !privateKey)) {
-        $('#empty-new').classList.toggle('hidden', isTrash);
-      }
+      $('#empty-new').classList.toggle('hidden', isTrash);
     }
   }
 
@@ -761,7 +746,7 @@
 
   async function createNote() {
     if (currentView === 'private' && !privateKey) {
-      showPrivatePasswordDialog(privateConfig ? 'unlock' : 'setup', () => createNote());
+      showStatus('Enter your Private password in the search bar to unlock your notes.', true);
       return;
     }
     const note = {
@@ -851,20 +836,13 @@
     if (!note || note.deletedAt || note.archived) return;
     if (!await saveBeforeAction()) return;
     if (!note.isPrivate && !privateKey) {
-      if (privateConfig) {
-        showPrivatePasswordDialog('unlock', () => togglePrivate());
-      } else {
-        showPrivatePasswordDialog('setup', () => {
-          currentView = 'private';
-          ui.moreMenu.classList.add('hidden');
-          render();
-          showStatus('Note moved to Private and encrypted.');
-        }, note.id);
-      }
+      showStatus(privateConfig
+        ? 'Enter your Private password in the search bar to unlock Private first.'
+        : 'Set a Private password in Settings before moving notes to Private.', true);
       return;
     }
     if (note.isPrivate && !privateKey) {
-      showPrivatePasswordDialog('unlock', () => togglePrivate());
+      showStatus('Enter your Private password in the search bar to unlock Private first.', true);
       return;
     }
     note.isPrivate = !note.isPrivate;
@@ -1047,21 +1025,17 @@
     $('#modal-close').focus();
   }
 
-  function showPrivatePasswordDialog(mode, onSuccess = () => {}, noteToPrivatize = null) {
-    const settingUp = mode === 'setup';
-    const formTitle = settingUp ? 'Set a Private password' : 'Unlock Private';
-    const formCopy = settingUp
-      ? 'This password encrypts all Private notes on this device. If you forget it, the notes cannot be recovered.'
-      : 'Enter the password you set for Private notes.';
-    openModal(formTitle, `
+  function showPrivatePasswordDialog() {
+    openModal('Set a Private password', `
       <form id="private-password-form" class="password-form">
-        <p class="password-copy">${escapeHtml(formCopy)}</p>
-        <label for="private-password">${settingUp ? 'New password' : 'Password'}</label>
-        <input id="private-password" name="password" type="password" minlength="${settingUp ? 8 : 1}" autocomplete="${settingUp ? 'new-password' : 'current-password'}" required>
-        ${settingUp ? '<label for="private-password-confirm">Confirm password</label><input id="private-password-confirm" name="confirm-password" type="password" minlength="8" autocomplete="new-password" required>' : ''}
+        <p class="password-copy">This password encrypts all Private notes on this device. If you forget it, the notes cannot be recovered. Enter it in the search bar whenever you want to unlock Private notes.</p>
+        <label for="private-password">New password</label>
+        <input id="private-password" name="password" type="password" minlength="8" autocomplete="new-password" required>
+        <label for="private-password-confirm">Confirm password</label>
+        <input id="private-password-confirm" name="confirm-password" type="password" minlength="8" autocomplete="new-password" required>
         <p id="private-password-error" class="password-error hidden" role="alert"></p>
-        <button class="button button-primary password-submit" type="submit">${settingUp ? 'Encrypt and continue' : 'Unlock'}</button>
-      </form>`, settingUp ? 'PASSWORD PROTECTION' : 'PRIVATE NOTES');
+        <button class="button button-primary password-submit" type="submit">Set password</button>
+      </form>`, 'PASSWORD PROTECTION');
 
     const form = $('#private-password-form');
     const passwordInput = $('#private-password');
@@ -1071,21 +1045,19 @@
       const error = $('#private-password-error');
       error.classList.add('hidden');
       try {
-        if (settingUp) {
-          if (password.length < 8) throw new Error('Use at least 8 characters.');
-          if (password !== $('#private-password-confirm').value) throw new Error('The passwords do not match.');
-          await createPrivatePassword(password, noteToPrivatize);
-        } else {
-          await unlockPrivate(password);
-        }
-        closeModal();
-        currentView = 'private';
-        currentFilter = '';
+        if (password.length < 8) throw new Error('Use at least 8 characters.');
+        if (password !== $('#private-password-confirm').value) throw new Error('The passwords do not match.');
+        await createPrivatePassword(password);
+        privateKey = null;
+        await reloadStoredNotes();
+        selectedId = null;
+        currentView = 'notes';
         ui.search.value = '';
+        closeModal();
         render();
-        await onSuccess();
+        showStatus('Private password set. Enter it in the search bar to unlock Private notes.');
       } catch (reason) {
-        error.textContent = reason instanceof Error ? reason.message : 'Could not unlock Private.';
+        error.textContent = reason instanceof Error ? reason.message : 'Could not set the Private password.';
         error.classList.remove('hidden');
         passwordInput.value = '';
         passwordInput.focus();
@@ -1107,7 +1079,7 @@
     privateKey = null;
     notes = storedNotes.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
     selectedId = null;
-    currentView = 'private';
+    currentView = 'notes';
     ui.search.value = '';
     ui.moreMenu.classList.add('hidden');
     render();
@@ -1155,7 +1127,7 @@
           <button class="small-button" id="reset-appearance" type="button">Reset</button>
         </div>
         <div class="settings-password">
-          <div><strong>Private notes</strong><span>${privateConfig ? 'Change the password that protects your encrypted notes.' : 'Set a password to protect notes in Private.'}</span></div>
+          <div><strong>Private notes</strong><span>${privateConfig ? 'Change the password. Enter it in the search bar to unlock Private notes.' : 'Set a password to encrypt notes in Private.'}</span></div>
           <button class="small-button" id="change-private-password" type="button">${privateConfig ? 'Change password' : 'Set password'}</button>
         </div>
       </form>`, 'SETTINGS');
@@ -1246,7 +1218,7 @@
 
   function showChangePrivatePasswordDialog() {
     if (!privateConfig) {
-      showPrivatePasswordDialog('setup');
+      showPrivatePasswordDialog();
       return;
     }
     openModal('Change Private password', `
@@ -1333,7 +1305,6 @@
         <button class="palette-action text-button" data-command="liked" type="button">Show liked notes</button><kbd></kbd>
         <button class="palette-action text-button" data-command="recent" type="button">Show recent notes</button><kbd></kbd>
         <button class="palette-action text-button" data-command="archive" type="button">Show archived notes</button><kbd></kbd>
-        <button class="palette-action text-button" data-command="private" type="button">Show private notes</button><kbd></kbd>
         <button class="palette-action text-button" data-command="export" type="button">Export all notes</button><kbd></kbd>
         <button class="palette-action text-button" data-command="shortcuts" type="button">Keyboard shortcuts</button><kbd></kbd>
       </div>`, 'COMMANDS');
@@ -1374,6 +1345,32 @@
     render();
   }
 
+  async function unlockPrivateFromSearch() {
+    const password = ui.search.value;
+    if (!privateConfig || !password.trim() || privateUnlockInProgress) return;
+    privateUnlockInProgress = true;
+    try {
+      if (!await saveBeforeAction()) return;
+      await unlockPrivate(password);
+      selectedId = null;
+      currentView = 'private';
+      currentFilter = '';
+      ui.search.value = '';
+      appShell.classList.remove('nav-open');
+      render();
+      showStatus('Private notes unlocked.');
+    } catch (error) {
+      if (error instanceof Error && error.message === 'That password is not correct.') {
+        renderNoteList();
+        if (!visibleNotes().length) showStatus('No matching notes or valid Private password was entered.', true);
+      } else {
+        showStatus(`Could not unlock Private: ${error.message}`, true);
+      }
+    } finally {
+      privateUnlockInProgress = false;
+    }
+  }
+
   document.addEventListener('click', async (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
@@ -1400,11 +1397,7 @@
     if (tagButton) { await navigate('tag', tagButton.dataset.tag); return; }
     const viewButton = target.closest('[data-view]');
     if (viewButton) {
-      if (viewButton.dataset.view === 'private' && !privateKey) {
-        showPrivatePasswordDialog(privateConfig ? 'unlock' : 'setup');
-      } else {
-        await navigate(viewButton.dataset.view);
-      }
+      await navigate(viewButton.dataset.view);
       return;
     }
     const historyButton = target.closest('[data-restore-history]');
@@ -1415,7 +1408,7 @@
       closeModal();
       if (action === 'new') await createNote();
       else if (action === 'search') ui.search.focus();
-      else if (['pinned', 'liked', 'recent', 'archive', 'private'].includes(action)) await navigate(action);
+      else if (['pinned', 'liked', 'recent', 'archive'].includes(action)) await navigate(action);
       else if (action === 'export') await exportJson('all');
       else if (action === 'shortcuts') openShortcuts();
       return;
@@ -1451,13 +1444,6 @@
       selectedId = null;
       appShell.classList.remove('nav-open');
       render();
-      return;
-    }
-    if (target.closest('#empty-new') && currentView === 'trash' && !privateKey && notes.some((note) => note.deletedAt && note.isPrivate)) {
-      showPrivatePasswordDialog('unlock', () => {
-        currentView = 'trash';
-        render();
-      });
       return;
     }
     if (target.closest('#new-note, #mobile-new, #empty-new, #welcome-new')) { appShell.classList.remove('nav-open'); await createNote(); return; }
@@ -1498,6 +1484,12 @@
 
   [ui.title, ui.folder, ui.tags, ui.content].forEach((field) => field.addEventListener('input', queueSave));
   ui.search.addEventListener('input', renderNoteList);
+  ui.search.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.isComposing) {
+      event.preventDefault();
+      unlockPrivateFromSearch();
+    }
+  });
   $('#import-file').addEventListener('change', (event) => {
     const file = event.target.files && event.target.files[0];
     if (file) importFile(file);

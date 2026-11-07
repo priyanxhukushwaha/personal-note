@@ -26,7 +26,7 @@
           </button>
           <label class="search-box">
             <span aria-hidden="true">⌕</span>
-            <input id="search" type="search" placeholder="Search notes" autocomplete="off">
+            <input id="search" type="search" placeholder="Search or enter password" title="Press Enter with your Private password to unlock Private notes" autocomplete="off" aria-label="Search notes or enter Private password and press Enter">
             <kbd>Ctrl K</kbd>
           </label>
         </div>
@@ -49,11 +49,6 @@
             <span class="nav-icon" aria-hidden="true">▣</span> Archive
             <span class="nav-count" id="archive-count">0</span>
           </button>
-          <button class="nav-item" data-view="private" type="button">
-            <span class="nav-icon" aria-hidden="true">▤</span> Private
-            <span class="nav-count" id="private-count">0</span>
-          </button>
-
           <div class="nav-section hidden">
             <div id="folder-list" class="folder-list"></div>
           </div>
