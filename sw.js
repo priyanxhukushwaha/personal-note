@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fieldnotes-v10';
+const CACHE_NAME = 'fieldnotes-v11';
 const APP_FILES = ['./', './index.html', './styles.css', './app.js', './manifest.json', './icon.svg', './offnote-logo.png'];
 
 self.addEventListener('install', (event) => {

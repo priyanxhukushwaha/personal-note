@@ -79,7 +79,7 @@
       button.setAttribute('aria-label', `Switch to ${isDark ? 'light' : 'dark'} mode`);
       button.title = `Switch to ${isDark ? 'light' : 'dark'} mode`;
     });
-    $('meta[name="theme-color"]').content = isDark ? '#000000' : '#f5f7f8';
+    $('meta[name="theme-color"]').content = isDark ? '#202622' : '#f4f1e8';
   }
 
   function normalizeAppearance(value) {
@@ -145,7 +145,7 @@
         document.fonts.delete(uploadedFontFace);
         uploadedFontFace = null;
       }
-      $('meta[name="theme-color"]').content = root.dataset.theme === 'dark' ? '#000000' : '#f5f7f8';
+      $('meta[name="theme-color"]').content = root.dataset.theme === 'dark' ? '#202622' : '#f4f1e8';
       return;
     }
     root.dataset.userCustomized = 'true';
@@ -159,7 +159,7 @@
     $('meta[name="theme-color"]').content = appearance.backgroundColor;
   }
 
-  applyTheme(localStorage.getItem(THEME_STORAGE_KEY) === 'light' ? 'light' : 'dark');
+  applyTheme(localStorage.getItem(THEME_STORAGE_KEY) === 'dark' ? 'dark' : 'light');
 
   const openDatabase = () => new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -451,7 +451,7 @@
     }))].sort((a, b) => a.localeCompare(b));
     ui.folderList.innerHTML = folders.map((folder) => {
       const depth = folder.split('/').filter(Boolean).length - 1;
-      return `<button class="nav-item ${currentView === 'folder' && currentFilter === folder ? 'active' : ''}" data-folder="${escapeHtml(folder)}" type="button" style="padding-left:${9 + depth * 10}px" title="${escapeHtml(folder)}"><span class="nav-icon folder-icon">▱</span><span>${escapeHtml(folder.split('/').pop())}</span></button>`;
+      return `<button class="nav-item ${currentView === 'folder' && currentFilter === folder ? 'active' : ''}" data-folder="${escapeHtml(folder)}" type="button" style="padding-left:${9 + depth * 10}px" title="${escapeHtml(folder)}"><span class="nav-icon folder-icon"><svg viewBox="0 0 24 24"><path d="M3.5 6.5h6l2 2h9v10h-17z"></path></svg></span><span>${escapeHtml(folder.split('/').pop())}</span></button>`;
     }).join('');
     ui.folderList.closest('.nav-section').classList.toggle('hidden', !folders.length);
     const tags = [...new Set(liveNotes.flatMap((note) => note.tags))]
@@ -1093,8 +1093,8 @@
 
   async function openSettings() {
     const defaults = document.documentElement.dataset.theme === 'light'
-      ? { backgroundColor: '#f5f7f8', fontColor: '#1d2933', fontFamily: 'sans' }
-      : { backgroundColor: '#000000', fontColor: '#ffffff', fontFamily: 'sans' };
+      ? { backgroundColor: '#f4f1e8', fontColor: '#252c24', fontFamily: 'sans' }
+      : { backgroundColor: '#202622', fontColor: '#edf1e9', fontFamily: 'sans' };
     const values = appearance || defaults;
     const familyOptions = [
       ['sans', 'Arial'],
@@ -1374,8 +1374,13 @@
   document.addEventListener('click', async (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
-    if (appShell.classList.contains('nav-open') && !target.closest('.sidebar, #mobile-nav-toggle')) {
+    const closeMobileNav = () => {
       appShell.classList.remove('nav-open');
+      $('#mobile-nav-toggle').setAttribute('aria-label', 'Open notebook menu');
+      $('#mobile-nav-toggle').setAttribute('aria-expanded', 'false');
+    };
+    if (appShell.classList.contains('nav-open') && !target.closest('.sidebar, #mobile-nav-toggle')) {
+      closeMobileNav();
     }
     if (target.closest('.theme-toggle')) {
       const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
@@ -1392,11 +1397,12 @@
       return;
     }
     const folderButton = target.closest('[data-folder]');
-    if (folderButton) { await navigate('folder', folderButton.dataset.folder); return; }
+    if (folderButton) { closeMobileNav(); await navigate('folder', folderButton.dataset.folder); return; }
     const tagButton = target.closest('[data-tag]');
-    if (tagButton) { await navigate('tag', tagButton.dataset.tag); return; }
+    if (tagButton) { closeMobileNav(); await navigate('tag', tagButton.dataset.tag); return; }
     const viewButton = target.closest('[data-view]');
     if (viewButton) {
+      closeMobileNav();
       await navigate(viewButton.dataset.view);
       return;
     }
@@ -1433,7 +1439,12 @@
       }
       return;
     }
-    if (target.closest('#mobile-nav-toggle')) { appShell.classList.toggle('nav-open'); return; }
+    if (target.closest('#mobile-nav-toggle')) {
+      const isOpen = appShell.classList.toggle('nav-open');
+      $('#mobile-nav-toggle').setAttribute('aria-label', isOpen ? 'Close notebook menu' : 'Open notebook menu');
+      $('#mobile-nav-toggle').setAttribute('aria-expanded', String(isOpen));
+      return;
+    }
     if (target.closest('#back-to-list')) {
       if (privateKey && selectedNote() && selectedNote().isPrivate) {
         await lockPrivate();
@@ -1442,11 +1453,11 @@
         await saveSelected();
       }
       selectedId = null;
-      appShell.classList.remove('nav-open');
+      closeMobileNav();
       render();
       return;
     }
-    if (target.closest('#new-note, #mobile-new, #empty-new, #welcome-new')) { appShell.classList.remove('nav-open'); await createNote(); return; }
+    if (target.closest('#new-note, #mobile-new, #empty-new, #welcome-new')) { closeMobileNav(); await createNote(); return; }
     if (target.closest('#pin-note')) { await togglePinned(); return; }
     if (target.closest('#like-note')) { await toggleLiked(); return; }
     if (target.closest('#rename-note')) {

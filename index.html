@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#000000">
+    <meta name="theme-color" content="#f4f1e8">
     <meta name="description" content="A quiet, private notebook that works offline.">
     <title>OFFNOTE — your private notebook</title>
     <link rel="manifest" href="manifest.json">
@@ -13,7 +13,7 @@
   </head>
   <body>
     <div class="app-shell">
-      <aside class="sidebar" aria-label="Notebook navigation">
+      <aside class="sidebar" id="sidebar" aria-label="Notebook navigation">
         <a class="brand" href="#" aria-label="OFFNOTE home">
           <img class="brand-mark" src="offnote-logo.png" alt="">
           <span>OFFNOTE</span>
@@ -33,20 +33,20 @@
 
         <nav class="nav-groups">
           <button class="nav-item active" data-view="notes" type="button">
-            <span class="nav-icon" aria-hidden="true">▤</span> All notes
+            <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4.5" y="4" width="15" height="16" rx="2"></rect><path d="M9 8h6M9 12h6M9 16h4"></path></svg></span> All notes
             <span class="nav-count" id="notes-count">0</span>
           </button>
           <button class="nav-item" data-view="pinned" type="button">
-            <span class="nav-icon" aria-hidden="true">⌖</span> Pinned
+            <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m8 4 8 8-3 1-2 6-2-2 2-6-3-7Z"></path><path d="m14 10 5-5"></path></svg></span> Pinned
           </button>
           <button class="nav-item" data-view="liked" type="button">
-            <span class="nav-icon" aria-hidden="true">♥</span> Liked
+            <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 8.8c0 4.2-8 9.2-8 9.2S4 13 4 8.8a4.1 4.1 0 0 1 7.3-2.6L12 7l.7-.8A4.1 4.1 0 0 1 20 8.8Z"></path></svg></span> Liked
           </button>
           <button class="nav-item" data-view="recent" type="button">
-            <span class="nav-icon" aria-hidden="true">◷</span> Recently opened
+            <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M12 7v5l3 2"></path></svg></span> Recently opened
           </button>
           <button class="nav-item" data-view="archive" type="button">
-            <span class="nav-icon" aria-hidden="true">▣</span> Archive
+            <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM3 4h18v3H3z"></path><path d="M9 11h6"></path></svg></span> Archive
             <span class="nav-count" id="archive-count">0</span>
           </button>
           <div class="nav-section hidden">
@@ -59,7 +59,7 @@
 
         <div class="sidebar-bottom">
           <button class="nav-item" data-view="trash" type="button">
-            <span class="nav-icon" aria-hidden="true">♲</span> Trash
+            <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7"></path><path d="M10 11v5m4-5v5"></path></svg></span> Trash
           </button>
           <div class="storage-note"><span class="status-dot"></span> Saved on this device</div>
         </div>
@@ -72,7 +72,7 @@
               <p class="eyebrow" id="list-eyebrow">YOUR SPACE</p>
               <h1 id="list-title">All notes</h1>
             </div>
-            <button class="icon-button mobile-nav-toggle" id="mobile-nav-toggle" type="button" aria-label="Open notebook menu">☰</button>
+            <button class="icon-button mobile-nav-toggle" id="mobile-nav-toggle" type="button" aria-label="Open notebook menu" aria-controls="sidebar" aria-expanded="false">☰</button>
             <button class="icon-button mobile-new" id="mobile-new" type="button" aria-label="New note">＋</button>
             <button class="icon-button settings-button" id="settings-open" type="button" aria-label="Settings" title="Settings">
               <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
