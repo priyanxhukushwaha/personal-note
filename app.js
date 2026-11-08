@@ -372,10 +372,6 @@
   const loadNotes = async () => {
     await reloadStoredNotes();
     privateConfig = await getSetting(PRIVATE_CONFIG_KEY) || null;
-    if (!selectedId) {
-      const lastOpened = activeNotes().filter((note) => note.openedAt).sort((a, b) => b.openedAt - a.openedAt)[0];
-      selectedId = lastOpened ? lastOpened.id : null;
-    }
     render();
   };
 
@@ -465,7 +461,7 @@
   function renderNoteList() {
     const query = ui.search.value.trim();
     const viewLabels = {
-      notes: ['YOUR SPACE', 'All notes'],
+      notes: ['YOUR SPACE', 'Recent Notes'],
       pinned: ['QUICK ACCESS', 'Pinned'],
       liked: ['QUICK ACCESS', 'Liked'],
       recent: ['QUICK ACCESS', 'Recently opened'],
